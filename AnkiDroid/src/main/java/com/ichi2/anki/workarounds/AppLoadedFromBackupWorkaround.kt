@@ -49,6 +49,16 @@ object AppLoadedFromBackupWorkaround {
             return false
         }
 
+        // Attempt to initialise the application once if backup/restore skipped Application.onCreate.
+        (application as? AnkiDroidApp)?.let { app ->
+            runCatching { app.onCreate() }.onFailure {
+                Timber.w(it, "Manual AnkiDroidApp initialization failed")
+            }
+        }
+        if (AnkiDroidApp.isInitialized) {
+            return false
+        }
+
         // #7630: Can be triggered with `adb shell bmgr restore com.ichi2.anki` after AnkiDroid settings are changed.
         // Application.onCreate() is not called if:
         // * The App was open
