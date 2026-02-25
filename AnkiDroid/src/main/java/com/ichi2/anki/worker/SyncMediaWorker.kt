@@ -62,7 +62,7 @@ class SyncMediaWorker(
     override suspend fun doWork(): Result {
         Timber.v("SyncMediaWorker::doWork")
 
-        try {
+        return try {
             val auth =
                 syncAuth {
                     hkey = inputData.getString(HKEY_KEY)!!
@@ -82,6 +82,8 @@ class SyncMediaWorker(
                 trySetForeground(getForegroundInfo())
                 monitorProgress(backend)
             }
+            Timber.d("SyncMediaWorker: success")
+            Result.success()
         } catch (cancellationException: CancellationException) {
             Timber.w(cancellationException)
             cancelMediaSync(CollectionManager.getBackend())
@@ -94,13 +96,11 @@ class SyncMediaWorker(
                     setContentText(message)
                 }
             }
-            return Result.failure()
+            Result.failure()
+        } finally {
+            Timber.d("SyncMediaWorker: cancelling notification")
+            notificationManager?.cancel(NotificationId.SYNC_MEDIA)
         }
-        Timber.d("SyncMediaWorker: cancelling notification")
-        notificationManager?.cancel(NotificationId.SYNC_MEDIA)
-
-        Timber.d("SyncMediaWorker: success")
-        return Result.success()
     }
 
     private suspend fun monitorProgress(backend: Backend) {
